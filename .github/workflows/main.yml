@@ -1,15 +1,42 @@
 name: Deploy to Firebase Hosting on PR
-'on': pull_request
+on: 
+  push:
+       branches: [main]
+       
 jobs:
-  build_and_preview:
+  build:
+    name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - run: npm ci && npm run build
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+      - name: Checkout Repository
+        uses: actions/checkout@main
+      - name: Install dependency
+        run: npm ci
+      - name: Build dependencies
+        run : npm run build
+      - name: Archive production aritifact
+        uses: actions/upload-artifact@main
         with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_NETFLIX_56BF0 }}'
-          projectId: netflix-56bf0
+          name: build
+          path: build
+  deploy:
+    name: deploy
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@main
+      - name: Download Artifactory
+        uses: actions/download-artifact@main
+        with:
+          name: build
+          path: build
+      - name: Deploy to Firebase
+        uses: w9jds/firebase-action@master
+        with:
+          args: deploy
         env:
-          FIREBASE_CLI_PREVIEWS: hostingchannels
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+  
+      
+  
